@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+#
+# twilio-threads - List SMS conversation threads using the Twilio CLI
+#
+# Groups inbound + outbound messages by conversation partner.
+# Twilio has no native threading API, so this fetches both directions
+# and groups client-side.
+#
+# Usage:
+#   twilio-threads [--number +18176685965] [--partner +1234567890] [--since 2025-01-01] [--limit 200]
+#
+# Options:
+#   --number   Your Twilio number (default: +18176685965)
+#   --partner  Filter to a single conversation partner
+#   --since    Only include messages after this date (ISO 8601)
+#   --limit    Max messages to fetch per direction (default: 200)
+#
+# Output: JSON object with myNumber and threads sorted by most recent message
+
+set -euo pipefail
+
+MY_NUMBER="+18176685965"
+PARTNER=""
+SINCE=""
+LIMIT=200
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --number)  MY_NUMBER="$2"; shift 2 ;;
+    --partner) PARTNER="$2"; shift 2 ;;
+    --since)   SINCE="$2"; shift 2 ;;
+    --limit)   LIMIT="$2"; shift 2 ;;
+    -h|--help) head -18 "$0" | tail -16; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
+TMPDIR_WORK=$(mktemp -d)
+trap 'rm -rf "$TMPDIR_WORK"' EXIT
+
+OUTBOUND_ARGS=(api:core:messages:list --from "$MY_NUMBER" --limit "$LIMIT" -o json)
+INBOUND_ARGS=(api:core:messages:list --to "$MY_NUMBER" --limit "$LIMIT" -o json)
+
+if [[ -n "$SINCE" ]]; then
+  OUTBOUND_ARGS+=(--date-sent-after "$SINCE")
+  INBOUND_ARGS+=(--date-sent-after "$SINCE")
+fi
+
+# Fetch both directions in parallel
+twilio "${OUTBOUND_ARGS[@]}" 2>/dev/null > "$TMPDIR_WORK/outbound.json" &
+twilio "${INBOUND_ARGS[@]}" 2>/dev/null > "$TMPDIR_WORK/inbound.json" &
+wait
+
+python3 - "$MY_NUMBER" "$PARTNER" "$TMPDIR_WORK/outbound.json" "$TMPDIR_WORK/inbound.json" <<'PYEOF'
+import json, sys
+
+my_number = sys.argv[1]
+partner_filter = sys.argv[2] or None
+outbound_file = sys.argv[3]
+inbound_file = sys.argv[4]
+
+def load_json_file(path):
+    with open(path) as f:
+        content = f.read().strip()
+    if not content:
+        return []
+    return json.loads(content)
+
+outbound = load_json_file(outbound_file)
+inbound = load_json_file(inbound_file)
+
+all_msgs = outbound + inbound
+all_msgs.sort(key=lambda m: m.get("dateSent") or m.get("dateCreated") or "")
+
+threads = {}
+for m in all_msgs:
+    direction = m.get("direction", "")
+    other = m["from"] if direction.startswith("inbound") else m["to"]
+    if partner_filter and other != partner_filter:
+        continue
+    threads.setdefault(other, []).append({
+        "sid": m.get("sid"),
+        "from": m.get("from"),
+        "to": m.get("to"),
+        "body": m.get("body"),
+        "status": m.get("status"),
+        "direction": direction,
+        "dateSent": m.get("dateSent"),
+        "numMedia": m.get("numMedia"),
+    })
+
+result = [
+    {"participant": p, "messageCount": len(msgs), "messages": msgs}
+    for p, msgs in threads.items()
+]
+result.sort(key=lambda t: t["messages"][-1].get("dateSent") or "", reverse=True)
+
+json.dump({"myNumber": my_number, "threads": result}, sys.stdout, indent=2)
+print()
+PYEOF

@@ -1,36 +1,121 @@
-# twilio-sms
+# Twilio SMS
 
-```
-cd ~/tools/twilio-sms
-bundle exec ruby sms.rb <command> [options]
-```
+Uses the official [Twilio CLI](https://www.twilio.com/docs/twilio-cli) (`twilio`) plus a custom `twilio-threads` script for conversation threading.
 
-## Commands
+## Account Info
 
-```
-list     [--from NUMBER] [--to NUMBER] [--since DATE] [--until DATE] [--limit N]
-get      --sid SID
-threads  [--my-number NUMBER] [--partner NUMBER] [--since DATE] [--limit N]
-send     --to NUMBER [--body TEXT] [--from NUMBER] [--messaging-service SID] [--media-url URL ...]
-numbers  [--limit N]
-```
+- Default number: `+18176685965`
+- CLI profile stored in `~/.twilio-cli/config.json` (includes Account SID + API key)
 
-## Examples
+## Phone Numbers
 
 ```bash
-bundle exec ruby sms.rb list --limit 5
-bundle exec ruby sms.rb list --from "+15551234567" --since "2025-01-01"
-bundle exec ruby sms.rb get --sid SM1234567890abcdef
-bundle exec ruby sms.rb threads --partner "+15559876543"
-bundle exec ruby sms.rb send --to "+15559876543" --body "Hello"
-bundle exec ruby sms.rb send --to "+15559876543" --media-url "https://example.com/img.jpg"
-bundle exec ruby sms.rb numbers
+# List owned numbers
+twilio api:core:incoming-phone-numbers:list -o json
+
+# Search available numbers to buy
+twilio api:core:available-phone-numbers:local:list --country-code US --area-code 817 -o json
+
+# Buy a number
+twilio api:core:incoming-phone-numbers:create --phone-number "+1XXXXXXXXXX" -o json
+
+# Release (delete) a number
+twilio api:core:incoming-phone-numbers:remove --sid PNXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
-## Notes
+## Configure Webhooks
 
-- `send` is the only mutating command
-- `--media-url` can be repeated (max 10)
-- `--messaging-service` or `TWILIO_MESSAGING_SERVICE_SID` preferred for A2P 10DLC
-- `threads` defaults `--my-number` to `TWILIO_DEFAULT_NUMBER`
-- Output: JSON `{ok, data}` or `{ok, error, code}`
+```bash
+# Set SMS webhook URL on a number
+twilio api:core:incoming-phone-numbers:update \
+  --sid PNXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
+  --sms-url "https://example.com/sms" \
+  --sms-method POST -o json
+
+# Set voice webhook URL on a number
+twilio api:core:incoming-phone-numbers:update \
+  --sid PNXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
+  --voice-url "https://example.com/voice" \
+  --voice-method POST -o json
+
+# Set both at once
+twilio api:core:incoming-phone-numbers:update \
+  --sid PNXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
+  --sms-url "https://example.com/sms" \
+  --voice-url "https://example.com/voice" -o json
+```
+
+## Send & Receive Messages
+
+```bash
+# Send an SMS
+twilio api:core:messages:create \
+  --from "+18176685965" --to "+1234567890" --body "Hello" -o json
+
+# Send MMS (with media)
+twilio api:core:messages:create \
+  --from "+18176685965" --to "+1234567890" --body "Check this out" \
+  --media-url "https://example.com/image.jpg" -o json
+
+# List recent messages
+twilio api:core:messages:list --limit 20 -o json
+
+# List messages from a specific number
+twilio api:core:messages:list --from "+18176685965" --limit 20 -o json
+
+# List messages after a date
+twilio api:core:messages:list --date-sent-after "2025-01-01" --limit 50 -o json
+
+# Get a single message by SID
+twilio api:core:messages:fetch --sid SMXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX -o json
+```
+
+## Conversation Threads
+
+Twilio has no native threading. `twilio-threads` fetches inbound + outbound messages and groups them by conversation partner.
+
+```bash
+# All threads for default number (+18176685965)
+twilio-threads
+
+# Threads for a specific number
+twilio-threads --number +18172032087
+
+# Single conversation with a partner
+twilio-threads --partner "+1234567890"
+
+# Messages since a date
+twilio-threads --since "2025-06-01"
+
+# Limit messages fetched per direction (default: 200)
+twilio-threads --limit 50
+```
+
+## Messaging Services
+
+```bash
+# List messaging services
+twilio api:messaging:v1:services:list -o json
+
+# Send via messaging service (for A2P 10DLC compliance)
+twilio api:core:messages:create \
+  --messaging-service-sid MGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
+  --to "+1234567890" --body "Hello" -o json
+```
+
+## Account & Billing
+
+```bash
+# Account info
+twilio api:core:accounts:fetch -o json
+
+# Usage records (billing)
+twilio api:core:usage:records:list --category sms -o json
+```
+
+## Tips
+
+- Always use `-o json` for machine-readable output.
+- Use `--limit N` to control how many results are returned.
+- Run `twilio <command> --help` to see all available flags for any command.
+- The CLI supports tab completion: `twilio autocomplete` to set up.

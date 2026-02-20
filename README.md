@@ -1,42 +1,28 @@
 # twilio-sms
 
-CLI for sending and receiving SMS/MMS via Twilio. Outputs JSON for easy parsing.
+Thin wrapper around the official [Twilio CLI](https://www.twilio.com/docs/twilio-cli) with a custom `twilio-threads` script for conversation threading (which Twilio doesn't support natively).
 
 ## Setup
 
 ```bash
-bundle install
-```
-
-Create `.env`:
-
-```
-TWILIO_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_TOKEN=your_auth_token
-TWILIO_DEFAULT_NUMBER=+15551234567
-TWILIO_MESSAGING_SERVICE_SID=MGxxxxxxxx  # optional, for A2P 10DLC
+brew tap twilio/brew && brew install twilio
+twilio profiles:create YOUR_ACCOUNT_SID --auth-token YOUR_AUTH_TOKEN -p default
+twilio profiles:use default
 ```
 
 ## Usage
 
+All standard Twilio operations use the official CLI directly (see `AGENTS.md` for examples). The only custom script is:
+
+### twilio-threads
+
+Groups inbound + outbound messages into conversation threads by partner number.
+
 ```bash
-# List recent messages
-bundle exec ruby sms.rb list --limit 10
-bundle exec ruby sms.rb list --from "+15551234567" --since "2025-01-01"
-
-# Get a single message (with media info)
-bundle exec ruby sms.rb get --sid SMxxxxxxxx
-
-# View conversation threads
-bundle exec ruby sms.rb threads
-bundle exec ruby sms.rb threads --partner "+15559876543" --since "2025-06-01"
-
-# Send a message
-bundle exec ruby sms.rb send --to "+15559876543" --body "Hello!"
-bundle exec ruby sms.rb send --to "+15559876543" --body "Check this out" --media-url "https://example.com/image.jpg"
-
-# List account phone numbers
-bundle exec ruby sms.rb numbers
+twilio-threads                                    # All threads for default number
+twilio-threads --number +18172032087              # Different Twilio number
+twilio-threads --partner "+1234567890"            # Single conversation
+twilio-threads --since "2025-06-01" --limit 100   # Date filter + limit
 ```
 
-All output is single-line JSON with `{ok: true, data: ...}` or `{ok: false, error: ...}`.
+Outputs JSON with threads sorted by most recent message.
