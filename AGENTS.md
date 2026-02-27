@@ -1,4 +1,4 @@
-# Twilio SMS
+# twilio-sms-cli
 
 Uses the official [Twilio CLI](https://www.twilio.com/docs/twilio-cli) (`twilio`) plus a custom `twilio-threads` script for conversation threading.
 
@@ -6,44 +6,6 @@ Uses the official [Twilio CLI](https://www.twilio.com/docs/twilio-cli) (`twilio`
 
 - Default number: `+18176685965`
 - CLI profile stored in `~/.twilio-cli/config.json` (includes Account SID + API key)
-
-## Phone Numbers
-
-```bash
-# List owned numbers
-twilio api:core:incoming-phone-numbers:list -o json
-
-# Search available numbers to buy
-twilio api:core:available-phone-numbers:local:list --country-code US --area-code 817 -o json
-
-# Buy a number
-twilio api:core:incoming-phone-numbers:create --phone-number "+1XXXXXXXXXX" -o json
-
-# Release (delete) a number
-twilio api:core:incoming-phone-numbers:remove --sid PNXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-```
-
-## Configure Webhooks
-
-```bash
-# Set SMS webhook URL on a number
-twilio api:core:incoming-phone-numbers:update \
-  --sid PNXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
-  --sms-url "https://example.com/sms" \
-  --sms-method POST -o json
-
-# Set voice webhook URL on a number
-twilio api:core:incoming-phone-numbers:update \
-  --sid PNXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
-  --voice-url "https://example.com/voice" \
-  --voice-method POST -o json
-
-# Set both at once
-twilio api:core:incoming-phone-numbers:update \
-  --sid PNXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
-  --sms-url "https://example.com/sms" \
-  --voice-url "https://example.com/voice" -o json
-```
 
 ## Send & Receive Messages
 
@@ -91,31 +53,8 @@ twilio-threads --since "2025-06-01"
 twilio-threads --limit 50
 ```
 
-## Messaging Services
-
-```bash
-# List messaging services
-twilio api:messaging:v1:services:list -o json
-
-# Send via messaging service (for A2P 10DLC compliance)
-twilio api:core:messages:create \
-  --messaging-service-sid MGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
-  --to "+1234567890" --body "Hello" -o json
-```
-
-## Account & Billing
-
-```bash
-# Account info
-twilio api:core:accounts:fetch -o json
-
-# Usage records (billing)
-twilio api:core:usage:records:list --category sms -o json
-```
-
 ## Tips
 
 - Always use `-o json` for machine-readable output.
 - Use `--limit N` to control how many results are returned.
 - Run `twilio <command> --help` to see all available flags for any command.
-- The CLI supports tab completion: `twilio autocomplete` to set up.
