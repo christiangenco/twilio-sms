@@ -7,10 +7,10 @@
 # and groups client-side.
 #
 # Usage:
-#   twilio-threads [--number +18176685965] [--partner +1234567890] [--since 2025-01-01] [--limit 200]
+#   twilio-threads [--number +19726877795] [--partner +1234567890] [--since 2025-01-01] [--limit 200]
 #
 # Options:
-#   --number   Your Twilio number (default: +18176685965)
+#   --number   Your Twilio number (default: +19726877795)
 #   --partner  Filter to a single conversation partner
 #   --since    Only include messages after this date (ISO 8601)
 #   --limit    Max messages to fetch per direction (default: 200)
@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-MY_NUMBER="+18176685965"
+MY_NUMBER="+19726877795"
 PARTNER=""
 SINCE=""
 LIMIT=200

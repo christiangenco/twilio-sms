@@ -4,7 +4,8 @@ Uses the official [Twilio CLI](https://www.twilio.com/docs/twilio-cli) (`twilio`
 
 ## Account Info
 
-- Default number: `+18176685965`
+- Active number: `+19726877795` (primary — use this one)
+- Legacy number: `+18176685965`
 - CLI profile stored in `~/.twilio-cli/config.json` (includes Account SID + API key)
 
 ## Send & Receive Messages
@@ -12,18 +13,18 @@ Uses the official [Twilio CLI](https://www.twilio.com/docs/twilio-cli) (`twilio`
 ```bash
 # Send an SMS
 twilio api:core:messages:create \
-  --from "+18176685965" --to "+1234567890" --body "Hello" -o json
+  --from "+19726877795" --to "+1234567890" --body "Hello" -o json
 
 # Send MMS (with media)
 twilio api:core:messages:create \
-  --from "+18176685965" --to "+1234567890" --body "Check this out" \
+  --from "+19726877795" --to "+1234567890" --body "Check this out" \
   --media-url "https://example.com/image.jpg" -o json
 
 # List recent messages
 twilio api:core:messages:list --limit 20 -o json
 
 # List messages from a specific number
-twilio api:core:messages:list --from "+18176685965" --limit 20 -o json
+twilio api:core:messages:list --from "+19726877795" --limit 20 -o json
 
 # List messages after a date
 twilio api:core:messages:list --date-sent-after "2025-01-01" --limit 50 -o json
@@ -37,7 +38,7 @@ twilio api:core:messages:fetch --sid SMXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX -o json
 Twilio has no native threading. `twilio-threads` fetches inbound + outbound messages and groups them by conversation partner.
 
 ```bash
-# All threads for default number (+18176685965)
+# All threads for default number (+19726877795)
 twilio-threads
 
 # Threads for a specific number
