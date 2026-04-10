@@ -7,10 +7,10 @@
 # and groups client-side.
 #
 # Usage:
-#   twilio-threads [--number +19726877795] [--partner +1234567890] [--since 2025-01-01] [--limit 200]
+#   twilio-threads [--number +15551234567] [--partner +15557654321] [--since 2025-01-01] [--limit 200]
 #
 # Options:
-#   --number   Your Twilio number (default: +19726877795)
+#   --number   Your Twilio number (default: $TWILIO_FROM_NUMBER env var)
 #   --partner  Filter to a single conversation partner
 #   --since    Only include messages after this date (ISO 8601)
 #   --limit    Max messages to fetch per direction (default: 200)
@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-MY_NUMBER="+19726877795"
+MY_NUMBER="${TWILIO_FROM_NUMBER:-}"
 PARTNER=""
 SINCE=""
 LIMIT=200
@@ -34,6 +34,11 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
+
+if [[ -z "$MY_NUMBER" ]]; then
+  echo "Error: no Twilio number set. Pass --number +15551234567 or set TWILIO_FROM_NUMBER env var." >&2
+  exit 1
+fi
 
 TMPDIR_WORK=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_WORK"' EXIT

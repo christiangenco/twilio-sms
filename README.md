@@ -19,9 +19,9 @@ All standard Twilio operations use the official CLI directly (see `AGENTS.md` fo
 Groups inbound + outbound messages into conversation threads by partner number.
 
 ```bash
-twilio-threads                                    # All threads for default number
-twilio-threads --number +18172032087              # Different Twilio number
-twilio-threads --partner "+1234567890"            # Single conversation
+twilio-threads                                    # All threads (reads $TWILIO_FROM_NUMBER)
+twilio-threads --number +15551234567              # Different Twilio number
+twilio-threads --partner "+15557654321"           # Single conversation
 twilio-threads --since "2025-06-01" --limit 100   # Date filter + limit
 ```
 
@@ -68,7 +68,7 @@ twilio api:messaging:v1:services:list -o json
 # Send via messaging service (for A2P 10DLC compliance)
 twilio api:core:messages:create \
   --messaging-service-sid MGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
-  --to "+1234567890" --body "Hello" -o json
+  --to "+15557654321" --body "Hello" -o json
 ```
 
 ## Account & Billing
